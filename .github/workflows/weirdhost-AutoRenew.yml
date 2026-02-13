@@ -70,6 +70,11 @@ jobs:
         run: playwright install chromium
         working-directory: ${{ github.repository_owner }}-${{ github.event.repository.name }}-${{ env.PROJECT_DIR }}
 
+      # 步骤 5.6: 安装 SeleniumBase 驱动
+      - name: 🤖 安装 SeleniumBase 驱动
+        run: sbase install chromedriver
+        working-directory: ${{ github.repository_owner }}-${{ github.event.repository.name }}-${{ env.PROJECT_DIR }}
+
       # 步骤 6: 添加随机延迟
       - name: ⏳ 添加随机延迟
         run: |
