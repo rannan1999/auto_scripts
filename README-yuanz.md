@@ -34,7 +34,6 @@ a2@example.com,pass2,0,123456:AAxxxxxx,123456789
 ```
 HY2_PROXY_URL='hysteria2://[auth]@[host]:[port]/?sni=xxx&insecure=1&alpn=h3'
 ```
-<img width="969" height="498" alt="CleanShot 2026-03-03 at 19 07 34" src="https://github.com/user-attachments/assets/d2906f73-4a6f-449c-8d38-661fc70c3980" />
 
 ### 如果不设置此环境变量，脚本将使用直连模式
 
