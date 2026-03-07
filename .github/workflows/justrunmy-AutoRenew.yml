@@ -1,70 +1,125 @@
-name: JustRunMy 自动续期
+name: 🚀 JustRunMy Auto Renew
+
+# 触发条件
 on:
+  # 手动触发
   workflow_dispatch:
+  
+  # 定时触发 (每2天凌晨1点)
   schedule:
     - cron: '0 1 */2 * *'
+
+# 权限配置
+permissions:
+  contents: write
+  actions: write
+
+# 工作流任务
 jobs:
   renew:
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    permissions:
-      contents: write
-      actions: write
+    env:
+      # ========== Secrets 配置 ==========
+      JUST_BATCH: ${{ secrets.JUST_BATCH }}                    # 账户信息（必须）格式: email,passwd,tg_token,tg_chat_id
+      HY2_PROXY_URL: ${{ secrets.HY2_PROXY_URL }}              # Hysteria2 代理 URL（可选）
+      PRIVATE_REPO_TOKEN: ${{ secrets.PRIVATE_REPO_TOKEN }}    # 私有仓库访问令牌（必须）
+      SOCKS_PORT: ${{ secrets.SOCKS_PORT || '51080' }}         # SOCKS 端口（默认 51080）
+      
+      # ========== 项目配置 ==========
+      SCRIPT_DESC: JustRunMy 自动续期脚本
+      SCREENSHOT_DIR: screenshots
+      PRIVATE_REPO: jyucoeng/auto-justrunmy-private
+      SCRIPT_NAME: just.py
+    
     steps:
-      - name: 📥 下载代码
+      # 步骤 1: 检出私有仓库
+      - name: 📥 检出私有仓库
         uses: actions/checkout@v4
         with:
-          repository: jyucoeng/auto-justrunmy-private
-          token: ${{ secrets.PRIVATE_REPO_TOKEN }}
-      - name: 🐍 设置 Python
-        uses: actions/setup-python@v4
+          repository: ${{ env.PRIVATE_REPO }}
+          token: ${{ env.PRIVATE_REPO_TOKEN }}
+          fetch-depth: 1
+
+      # 步骤 2: 设置 Python 环境
+      - name: 🐍 设置 Python 3.11
+        uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
-          
-      - name: 🛡️ 安装 Hysteria2 (可选)
-        env:
-          HY2_PROXY_URL: ${{ secrets.HY2_PROXY_URL }}
-        run: |
-          if [ -z "$HY2_PROXY_URL" ]; then
-            echo "ℹ️ 未配置 HY2_PROXY_URL，将使用直连模式。"
-          else
-            echo "📡 安装 Hysteria2..."
-            wget -q https://github.com/apernet/hysteria/releases/download/app%2Fv2.4.4/hysteria-linux-amd64 -O hysteria
-            chmod +x hysteria
-            sudo mv hysteria /usr/local/bin/
-            echo "✅ Hysteria2 已安装"
-          fi
-          
-      - name: 🛠️ 安装系统依赖
+          python-version: 3.11
+
+      # 步骤 3: 安装系统依赖
+      - name: 📦 安装系统依赖
         run: |
           sudo apt-get update
-          sudo apt-get install -y \
-            xvfb \
-            x11-utils \
-            xdotool \
-            scrot \
-            fonts-noto-cjk
-            
-      - name: 🐍 安装 Python 依赖
+          sudo apt-get install -y xvfb xdotool scrot fonts-noto-cjk
+
+      # 步骤 4: 安装 Python 依赖
+      - name: 📚 安装 Python 依赖
         run: |
-          pip install seleniumbase aiohttp requests
-          seleniumbase install chromedriver
-          
-      - name: 🚀 运行续期脚本
+          pip install --upgrade pip
+          pip install -r requirements.txt
+
+      # 步骤 5: 安装 Hysteria2（如果需要代理）
+      - name: 📡 安装 Hysteria2
+        run: |
+          if [ -n "${{ env.HY2_PROXY_URL }}" ]; then
+            echo "安装 Hysteria2..."
+            curl -L -o hysteria \
+              https://github.com/apernet/hysteria/releases/latest/download/hysteria-linux-amd64
+            chmod +x hysteria
+            sudo mv hysteria /usr/local/bin/hysteria
+            hysteria version
+            echo "✅ Hysteria2 安装完成"
+          else
+            echo "⚠️ 未配置代理，跳过 Hysteria2 安装"
+          fi
+
+      # 步骤 6: 执行脚本
+      - name: 🚀 执行 ${{ env.SCRIPT_DESC }}
         env:
-          JUST_BATCH: ${{ secrets.JUST_BATCH }}
-          HY2_PROXY_URL: ${{ secrets.HY2_PROXY_URL }}
-        run: |
-          python renew.py
-            
-      - name: 📸 上传调试截图
+          JUST_BATCH: ${{ env.JUST_BATCH }}
+          HY2_PROXY_URL: ${{ env.HY2_PROXY_URL }}
+          SOCKS_PORT: ${{ env.SOCKS_PORT }}
+          SCREENSHOT_DIR: ${{ env.SCREENSHOT_DIR }}
+        run: python ${{ env.SCRIPT_NAME }}
+
+      # 步骤 7: 上传截图
+      - name: 📸 上传截图
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: debug-screenshots
-          path: "*.png"
-          retention-days: 3
-          
+          name: screenshots-${{ github.run_id }}
+          path: ${{ env.SCREENSHOT_DIR }}/
+          retention-days: 7
+
+      # 步骤 8: 清理本地截图
+      - name: 🧹 清理本地截图
+        if: always()
+        run: |
+          if [ -d "${{ env.SCREENSHOT_DIR }}" ]; then
+            rm -rf ${{ env.SCREENSHOT_DIR }}/*
+            echo "✅ 本地截图已清理"
+          fi
+
+      # 步骤 9: 提交执行时间到公开库
+      - name: ⏱️ 提交执行时间
+        if: always()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          mkdir -p justrunmy && echo "$(date +'%Y-%m-%d %H:%M:%S')" > justrunmy/time.txt
+          git add justrunmy/time.txt 2>/dev/null || true
+          if git diff --cached --quiet; then
+            echo "无变化，无需提交"
+          else
+            TIMESTAMP=$(date +'%Y-%m-%d %H:%M:%S')
+            git commit -m "⏱️ 更新执行时间: $TIMESTAMP"
+            git fetch origin main
+            git push -f origin HEAD:main
+            echo "✅ 更改已推送"
+          fi
+
+      # 步骤 10: 清理旧的工作流运行记录
       - name: 🧹 清理旧的工作流运行记录
         uses: Mattraks/delete-workflow-runs@v2
         with:
