@@ -30,7 +30,7 @@ jobs:
       SCRIPT_DESC: JustRunMy 自动续期脚本
       SCREENSHOT_DIR: screenshots
       PRIVATE_REPO: jyucoeng/auto-justrunmy-private
-      SCRIPT_NAME: just.py
+      SCRIPT_NAME: renew.py
     
     steps:
       # 步骤 1: 检出私有仓库
