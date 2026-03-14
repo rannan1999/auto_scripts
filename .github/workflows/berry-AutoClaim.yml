@@ -61,7 +61,9 @@ jobs:
           BERRY_BATCH_ACCOUNTS: ${{ env.BERRY_BATCH_ACCOUNTS }}
           HY2_PROXY_URL: ${{ env.HY2_PROXY_URL }}
           SOCKS_PORT: ${{ env.SOCKS_PORT }}
-        run: python berry.py
+        run: |
+          cd ${{ github.repository_owner }}-${{ github.event.repository.name }}-${{ env.PROJECT_DIR }}
+          python berry.py
 
       - name: ⏱️ 提交执行时间到私库
         if: always()
