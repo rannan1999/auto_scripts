@@ -8,7 +8,7 @@
 
 - PRIVATE_REPO_TOKEN （用于读取私库的 token，可跟其他库共用）
 
-- BERRY_BATCH_ACCOUNTS （berryhost 的账号环境变量）
+- BERRY_BATCH_ACCOUNTS （berryhost 的账号环境变量，必须填）
 
 ```
 BERRY_BATCH_ACCOUNTS=token,session_id,tg_token,tg_chat_id
@@ -23,10 +23,14 @@ token2,session_id2,tg_token2,tg_chat_id2
 
 每行一套数据：
 
-1、不发 TG：email,password
+1、不发 TG：token,session_id
 
-2、发 TG：email,password,tg_bot_token,tg_chat_id
+2、发 TG： token,session_id,tg_token,tg_chat_id
 
+3、token(Discord 账号 Token)的取值方式如下：
+- 打开 Discord 网页版 → F12 → Network → 任意请求 → Headers → authorization
+4、session_id (Discord Session ID) 的取值方式如下：
+- F12 → Network → 找一个 interactions 请求 → Payload → session_id
 
 ![Berry Session ID](https://github.com/jyucoeng/auto_scripts/blob/main/images/berry_session_id.png)
 
